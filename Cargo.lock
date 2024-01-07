@@ -9,7 +9,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55a037845910cc711902517a2566f6e39e9a2ce97ea131c6a47c62c436598a2a"
 
 [[package]]
-name = "grasp"
+name = "retaker"
 version = "0.1.0"
 dependencies = [
  "anylist",

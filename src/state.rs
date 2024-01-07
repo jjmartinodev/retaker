@@ -1,7 +1,5 @@
 use std::any::{Any, TypeId, type_name};
 
-use anylist::AnyList;
-
 use crate::{entity::EntityID, component::ComponentList};
 
 pub struct State {

@@ -1,5 +1,5 @@
-# Grasp
- Grasp is an ECS(very wip) that aims for simplicity and performance.
+# Retaker
+ Retaker is an ECS(very wip) that aims for simplicity and performance.
 
 # Example :
 ```
