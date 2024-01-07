@@ -1,5 +1,5 @@
 
-#[derive(Debug, Clone, Copy)]
-pub struct Entity {
-    id: u32
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EntityID {
+    pub(crate) id: u32
 }
