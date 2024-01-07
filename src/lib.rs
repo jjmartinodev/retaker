@@ -32,6 +32,8 @@ impl App {
 
         (self.start_system)(&mut state);
 
-        self.uptade(&mut state);
+        while !state.exiting() {
+            self.uptade(&mut state);
+        }
     }
 }

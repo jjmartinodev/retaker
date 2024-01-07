@@ -25,6 +25,7 @@ fn uptade_fn(state: &mut State) {
             println!("{} has {} health",name.val,health.val);
         }
     }
+    state.exit();
 }
 
 #[test]

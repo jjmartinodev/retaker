@@ -7,7 +7,8 @@ use crate::{entity::EntityID, component::ComponentList};
 pub struct State {
     entities: Vec<EntityID>,
     register: Vec<ComponentList>,
-    next_id:u32
+    next_id:u32,
+    exit: bool
 }
 
 impl State {
@@ -15,7 +16,8 @@ impl State {
         State {
             entities: vec![],
             register: vec![],
-            next_id: 0
+            next_id: 0,
+            exit: false
         }
     }
     pub fn create_entity(&mut self) -> EntityID {
@@ -24,6 +26,8 @@ impl State {
         self.next_id += 1;
         EntityID { id }
     }
+    pub fn exit(&mut self) { self.exit = true }
+    pub fn exiting(&self) -> bool { self.exit }
     fn component_location<C: Any>(&self) -> Option<usize> {
         let typeid = TypeId::of::<C>();
         for i in 0..self.register.len() {
