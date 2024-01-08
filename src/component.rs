@@ -52,6 +52,16 @@ impl ComponentList {
         self.list.push(component);
         self.owners.push(*entity);
     }
+    pub fn no_panic_remove(&mut self, entity: &EntityID) {
+        let index = self.find_owner(entity);
+        match index {
+            Some(index) => {
+                self.list.remove(index);
+                self.owners.remove(index);
+            }
+            None => ()
+        }
+    }
     pub fn remove(&mut self, entity: &EntityID) {
         let index = self.find_owner(entity);
         match index {

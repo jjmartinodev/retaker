@@ -34,6 +34,9 @@ impl State {
                 self.entities.remove(i);
             }
         }
+        for i in &mut self.register {
+            i.no_panic_remove(entity);
+        }
     }
     pub fn exit(&mut self) { self.exit = true }
     pub fn exiting(&self) -> bool { self.exit == true }
