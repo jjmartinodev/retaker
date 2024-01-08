@@ -4,6 +4,8 @@ use system::System;
 mod tests;
 
 mod state;
+mod entity;
+mod component;
 mod system;
 
 pub struct App {
@@ -25,11 +27,13 @@ impl App {
 
         (self.start_fn)(&mut state);
 
-        for system in &self.systems {
-            system(&mut state);
+        'main: loop {
+            for system in &self.systems {
+                system(&mut state);
 
-            if state.exiting() {
-                break;
+                if state.exiting() {
+                    break 'main;
+                }
             }
         }
     }

@@ -1,6 +1,6 @@
 [package]
 name = "retaker"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 rust-version = "1.56"
@@ -15,4 +15,4 @@ categories = ["data-structures"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anylist = "0.2.2"
+anylist = "0.2.3"

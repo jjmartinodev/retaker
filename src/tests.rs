@@ -1,46 +1,53 @@
-/*use crate::{App, state::State};
 
-struct Health { pub val: i32 }
-struct Name { pub val: String }
+use crate::{state::State, App};
 
-fn start_fn(state: &mut State) {
-    let player = state.create_entity();
-    state.add_component::<Health>(player, Health {val: 3});
-    state.add_component::<Name>(player, Name {val: "adventurer".to_owned()});
+struct Health {
+    val: u32
 }
 
-fn uptade_fn(state: &mut State) {
-    let health_owners = state.get_owners::<Health>();
-    let name_owners = state.get_owners::<Name>();
-    println!("{:?}",health_owners);
-    println!("{:?}",name_owners);
-    for health_owner in health_owners {
-        for name_owner in name_owners {
-            if health_owner != name_owner {
+struct Name {
+    val: String
+}
+
+struct Dead;
+
+fn start(state: &mut State) {
+    let player = state.create_entity();
+    state.insert_component(Health {val: 5}, &player);
+    state.insert_component(Name {val: "adventurer".to_owned()}, &player);
+
+    let enemy = state.create_entity();
+    state.insert_component(Health {val: 0}, &enemy);
+    state.insert_component(Name {val: "goblin".to_owned()}, &enemy);
+}
+
+fn die_if_health_is_zero(state: &mut State) {
+    let health_owners = state.get_owners::<Health>().to_owned();
+    let name_owners = state.get_owners::<Name>().to_owned();
+
+    for i in &health_owners {
+        for j in &name_owners {
+            if j != i {
                 continue;
             }
-            let health = state.get_component::<Health>(*health_owner);
-            let name = state.get_component::<Name>(*name_owner);
+            let entity = i;
+            let health = state.get_component::<Health>(&entity).unwrap();
+            let name = state.get_component::<Name>(&entity).unwrap();
+            println!("{} has {} of health", name.val, health.val);
 
-            println!("{} has {} health",name.val,health.val);
+            if health.val <= 0 {
+                println!("{} died", name.val);
+                state.delete_entity(&entity);
+            }
         }
     }
-    state.exit();
-}*/
 
-fn start_fn(state: &mut State) {
-    println!("")
-}
-
-fn uptade_fn(state: &mut State) {
-    println!("{:?}",health_owners);
-    
-    state.exit();
+    state.exit()
 }
 
 #[test]
 fn general() {
-    App::new(&start_fn)
-    .add_system(&uptade_fn)
+    App::new(&start)
+    .add_system(&die_if_health_is_zero)
     .run();
 }
