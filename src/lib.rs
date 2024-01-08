@@ -1,39 +1,36 @@
 use state::State;
 use system::System;
 
-mod entity;
-mod component;
-mod system;
-mod state;
-
-#[cfg(test)]
 mod tests;
 
+mod state;
+mod system;
+
 pub struct App {
-    systems:Vec<System>,
-    start_system: System
+    start_fn: System,
+    systems: Vec<System>
 }
 
 impl App {
-    pub fn new(start_system: System) -> App {
-        App { systems: vec![], start_system }
+    pub fn new(start_fn: System) -> App {
+        App { start_fn, systems: vec![] }
     }
-    pub fn add_system(mut self, system: System) -> Self {
+    pub fn add_system(mut self, system: System) -> App {
         self.systems.push(system);
         self
     }
-    pub fn uptade(&self, state: &mut State) {
-        for system in self.systems.iter() {
-            (system)(state)
-        }
-    }
     pub fn run(self) {
+
         let mut state = State::new();
 
-        (self.start_system)(&mut state);
+        (self.start_fn)(&mut state);
 
-        while !state.exiting() {
-            self.uptade(&mut state);
+        for system in &self.systems {
+            system(&mut state);
+
+            if state.exiting() {
+                break;
+            }
         }
     }
 }

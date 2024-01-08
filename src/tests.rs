@@ -1,4 +1,4 @@
-use crate::{App, state::State};
+/*use crate::{App, state::State};
 
 struct Health { pub val: i32 }
 struct Name { pub val: String }
@@ -25,6 +25,16 @@ fn uptade_fn(state: &mut State) {
             println!("{} has {} health",name.val,health.val);
         }
     }
+    state.exit();
+}*/
+
+fn start_fn(state: &mut State) {
+    println!("")
+}
+
+fn uptade_fn(state: &mut State) {
+    println!("{:?}",health_owners);
+    
     state.exit();
 }
 
