@@ -10,7 +10,7 @@ checksum = "502afe334cb0fb9d5dc9ba634f412d744e054dd35c558754aa3321f71dc6df62"
 
 [[package]]
 name = "retaker"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anylist",
 ]
