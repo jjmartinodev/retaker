@@ -1,9 +1,9 @@
-# Retaker
- Retaker is an ECS(very wip) that aims for simplicity and performance.
-
-# Example :
-```
-use retaker::{scheduler::Scheduler, system::System, world::World};
+use retaker::{
+    aoc::AOCStorage,
+    scheduler::Scheduler,
+    system::System,
+    world::{EntityStorage, World},
+};
 
 #[derive(Debug)]
 pub struct Name(String);
@@ -49,7 +49,7 @@ fn greet_dogs(world: &mut World) {
 }
 
 fn main() {
-    let mut world = World::default();
+    let mut world = World::new(EntityStorage::AOC(AOCStorage::new()));
     let mut scheduler = Scheduler::new();
 
     scheduler.add_system(System::Start(add_dogs));
@@ -60,4 +60,3 @@ fn main() {
     scheduler.start(&mut world);
     scheduler.uptade(&mut world);
 }
-```

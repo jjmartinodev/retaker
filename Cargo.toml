@@ -8,11 +8,12 @@ authors = ["sugmaboy<jjmartinodev@outlook.com>"]
 readme = "README.md"
 license-file = "LICENSE"
 description = "a simple ecs implementation"
-repository = "https://github.com/jjmartinodev/grasp"
+repository = "https://github.com/jjmartinodev/retaker"
 keywords = ["ecs","simple"]
 categories = ["data-structures"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anylist = "0.2.3"
+hashbrown = "0.12.3"
+varset = "0.1.1"

@@ -1,3 +1,7 @@
-use crate::state::State;
+use crate::world::World;
 
-pub type System = &'static dyn Fn(&mut State) -> ();
+pub enum System {
+    Start (fn(&mut World) -> ()),
+    Uptade (fn(&mut World) -> ()),
+    Exit (fn(&mut World) -> ()),
+}
