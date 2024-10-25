@@ -1,7 +1,6 @@
 use retaker::{
     aoc::AOCStorage,
-    scheduler::Scheduler,
-    system::System,
+    scheduler::{Scheduler, System},
     world::{EntityStorage, World},
 };
 
