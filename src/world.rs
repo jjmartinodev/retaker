@@ -57,7 +57,7 @@ impl World {
             EntityStorage::AOE(aoe) => aoe.remove_entity(entity)
         }
     }
-    pub fn get_component<C: Any + 'static>(&mut self, entity: &EntityId) -> Option<&C> {
+    pub fn get_component<C: Any + 'static>(&self, entity: &EntityId) -> Option<&C> {
         match &self.storage {
             EntityStorage::AOC(aoc) => aoc.get_component::<C>(entity),
             EntityStorage::AOE(aoe) => aoe.get_component::<C>(entity)

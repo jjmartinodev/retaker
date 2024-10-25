@@ -47,3 +47,9 @@ impl<T> Scheduler<T> {
         }
     }
 }
+
+impl<T> Default for Scheduler<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
