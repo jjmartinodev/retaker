@@ -3,7 +3,7 @@ use std::any::{Any, TypeId};
 use hashbrown::HashMap;
 
 use crate::aoe::AOEStorage;
-use crate::entity::EntityId;
+use crate::entity::{EntityId, EntityMut, EntityRef};
 
 use crate::aoc::AOCStorage;
 
@@ -24,6 +24,18 @@ impl World {
             storage,
             next_entity_id: 0,
             unique_entities: HashMap::new(),
+        }
+    }
+    pub fn ref_entity<'a>(&'a self, entity: &EntityId) -> EntityRef<'a> {
+        EntityRef {
+            id: *entity,
+            storage: &self.storage
+        }
+    }
+    pub fn mut_entity<'a>(&'a mut self, entity: &EntityId) -> EntityMut<'a> {
+        EntityMut {
+            id: *entity,
+            storage: &mut self.storage
         }
     }
     pub fn query<With: Any + 'static>(&self) -> Vec<EntityId> {

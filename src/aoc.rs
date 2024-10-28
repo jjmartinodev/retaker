@@ -47,7 +47,7 @@ impl AOCStorage {
             component_list.1.untyped_remove(entity);
         }
     }
-    pub fn get_component_list<C: Any + 'static>(&self) -> Option<&HashMap<EntityId, C>> {
+    pub fn get_component_list<C: Any>(&self) -> Option<&HashMap<EntityId, C>> {
         if let Some(comp) = self.components.get(&TypeId::of::<C>()) {
             Some(
                 comp.as_any()
@@ -58,7 +58,7 @@ impl AOCStorage {
             None
         }
     }
-    pub fn get_mut_component_list<C: Any + 'static>(
+    pub fn get_mut_component_list<C: Any>(
         &mut self,
     ) -> Option<&mut HashMap<EntityId, C>> {
         if let Some(comp) = self.components.get_mut(&TypeId::of::<C>()) {
@@ -71,7 +71,7 @@ impl AOCStorage {
             None
         }
     }
-    pub fn insert_component<C: Any + 'static>(&mut self, entity: &EntityId, component: C) {
+    pub fn insert_component<C: Any>(&mut self, entity: &EntityId, component: C) {
         if let Some(list) = self.get_mut_component_list::<C>() {
             if list.contains_key(entity) {
                 panic!("tried to add a component to an entity that already has the same component")
@@ -83,21 +83,21 @@ impl AOCStorage {
             self.insert_component(entity, component);
         }
     }
-    pub fn remove_component<C: Any + 'static>(&mut self, entity: &EntityId) -> Option<C> {
+    pub fn remove_component<C: Any>(&mut self, entity: &EntityId) -> Option<C> {
         if let Some(list) = self.get_mut_component_list::<C>() {
             list.remove(entity)
         } else {
             None
         }
     }
-    pub fn get_component<C: Any + 'static>(&self, entity: &EntityId) -> Option<&C> {
+    pub fn get_component<C: Any>(&self, entity: &EntityId) -> Option<&C> {
         if let Some(list) = self.get_component_list::<C>() {
             list.get(entity)
         } else {
             None
         }
     }
-    pub fn get_mut_component<C: Any + 'static>(&mut self, entity: &EntityId) -> Option<&mut C> {
+    pub fn get_mut_component<C: Any>(&mut self, entity: &EntityId) -> Option<&mut C> {
         if let Some(list) = self.get_mut_component_list::<C>() {
             list.get_mut(entity)
         } else {

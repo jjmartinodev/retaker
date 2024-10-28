@@ -1,8 +1,3 @@
-# Retaker
- Retaker is an ECS(very wip) that aims for simplicity and performance.
-
-# Example :
-```
 use retaker::{
     aoc::AOCStorage,
     scheduler::{Scheduler, System},
@@ -14,6 +9,7 @@ pub struct Name(String);
 pub struct Person;
 pub struct Dog;
 pub struct Age(u32);
+pub struct IsBirthday;
 
 fn add_dogs(world: &mut World) {
     let snowflake = world.create_entity();
@@ -34,6 +30,7 @@ fn add_people(world: &mut World) {
     world.insert_component(&camila, Name(String::from("Camila")));
     world.insert_component(&camila, Person);
     world.insert_component(&camila, Age(12));
+    world.insert_component(&camila, IsBirthday);
 }
 
 fn greet_people(world: &mut World) {
@@ -61,6 +58,17 @@ fn greet_dogs(world: &mut World) {
     }
 }
 
+fn celebrate_birthday(world: &mut World) {
+    for entity in world.query::<IsBirthday>() {
+        let someone = world.ref_entity(&entity);
+        if let Some(name) = someone.get_component::<Name>() {
+            println!("happy birthday {}!", name.0)
+        } else {
+            println!("happy birthday to you!")
+        }
+    }
+}
+
 fn main() {
     let mut world = World::new(EntityStorage::AOC(AOCStorage::new()));
     let mut scheduler = Scheduler::new();
@@ -69,8 +77,8 @@ fn main() {
     scheduler.add_system(System::Start(add_people));
     scheduler.add_system(System::Uptade(greet_people));
     scheduler.add_system(System::Uptade(greet_dogs));
+    scheduler.add_system(System::Uptade(celebrate_birthday));
 
     scheduler.start(&mut world);
     scheduler.uptade(&mut world);
 }
-```
