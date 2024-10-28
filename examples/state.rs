@@ -16,7 +16,7 @@ fn create_timer(world: &mut World) {
 }
 
 fn uptade_timer(world: &mut World) {
-    let timer = world.get_mut_unique_entity::<Timer>().unwrap();
+    let timer = world.mut_unique_entity::<Timer>().unwrap();
     if timer.last_uptade.elapsed() >= timer.delay {
         timer.last_uptade = Instant::now();
         println!("hiii");

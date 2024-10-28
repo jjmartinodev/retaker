@@ -104,6 +104,13 @@ impl AOCStorage {
             None
         }
     }
+    pub fn get_many_mut_component<C: Any, const N: usize>(&mut self, entities: [&EntityId; N]) -> Option<[&mut C; N]> {
+        if let Some(list) = self.get_mut_component_list::<C>() {
+            list.get_many_mut(entities)
+        } else {
+            None
+        }
+    }
 }
 
 impl Default for AOCStorage {

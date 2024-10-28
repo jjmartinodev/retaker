@@ -36,9 +36,9 @@ fn add_people(world: &mut World) {
 fn greet_people(world: &mut World) {
     for entity in world.query::<Person>() {
         let person = world.ref_entity(&entity);
-        if let Some(name) = person.get_component::<Name>() {
+        if let Some(name) = person.component::<Name>() {
             println!("good morning {}!", name.0);
-            if let Some(age) = person.get_component::<Age>() {
+            if let Some(age) = person.component::<Age>() {
                 println!("{}, {} years old", name.0, age.0);
             }
         } else {
@@ -50,7 +50,7 @@ fn greet_people(world: &mut World) {
 fn greet_dogs(world: &mut World) {
     for entity in world.query::<Dog>() {
         let dog = world.ref_entity(&entity);
-        if let Some(name) = dog.get_component::<Name>() {
+        if let Some(name) = dog.component::<Name>() {
             println!("awww, hi {}!", name.0)
         } else {
             println!("this dog doesn't have a name!")
@@ -60,9 +60,12 @@ fn greet_dogs(world: &mut World) {
 
 fn celebrate_birthday(world: &mut World) {
     for entity in world.query::<IsBirthday>() {
-        let someone = world.ref_entity(&entity);
-        if let Some(name) = someone.get_component::<Name>() {
-            println!("happy birthday {}!", name.0)
+        let mut someone = world.mut_entity(&entity);
+        if let Some(name) = someone.component::<Name>() {
+            println!("happy birthday {}!", name.0);
+            if let Some(age) = someone.mut_component::<Age>() {
+                age.0 += 1;
+            }
         } else {
             println!("happy birthday to you!")
         }
@@ -75,9 +78,9 @@ fn main() {
 
     scheduler.add_system(System::Start(add_dogs));
     scheduler.add_system(System::Start(add_people));
+    scheduler.add_system(System::Uptade(celebrate_birthday));
     scheduler.add_system(System::Uptade(greet_people));
     scheduler.add_system(System::Uptade(greet_dogs));
-    scheduler.add_system(System::Uptade(celebrate_birthday));
 
     scheduler.start(&mut world);
     scheduler.uptade(&mut world);

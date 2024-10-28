@@ -29,13 +29,15 @@ impl World {
     pub fn ref_entity<'a>(&'a self, entity: &EntityId) -> EntityRef<'a> {
         EntityRef {
             id: *entity,
-            storage: &self.storage
+            storage: &self.storage,
+            entity: None
         }
     }
     pub fn mut_entity<'a>(&'a mut self, entity: &EntityId) -> EntityMut<'a> {
         EntityMut {
             id: *entity,
-            storage: &mut self.storage
+            storage: &mut self.storage,
+            entity: None
         }
     }
     pub fn query<With: Any + 'static>(&self) -> Vec<EntityId> {
@@ -50,7 +52,7 @@ impl World {
                 let map = aoe.raw_map();
                 let mut entities = vec![];
                 for (entity, component_list) in map {
-                    if component_list.contains::<With>() {
+                    if component_list.components.contains::<With>() {
                         entities.push(*entity);
                     }
                 }
@@ -74,13 +76,13 @@ impl World {
         self.unique_entities
             .insert(TypeId::of::<State>(), Box::new(state));
     }
-    pub fn get_unique_entity<State: Any>(&self) -> Option<&State> {
+    pub fn unique_entity<State: Any>(&self) -> Option<&State> {
         self.unique_entities
             .get(&TypeId::of::<State>())
             .expect("didn't find unique entity")
             .downcast_ref()
     }
-    pub fn get_mut_unique_entity<State: Any>(&mut self) -> Option<&mut State> {
+    pub fn mut_unique_entity<State: Any>(&mut self) -> Option<&mut State> {
         self.unique_entities
             .get_mut(&TypeId::of::<State>())
             .expect("didn't find unique entity")
@@ -101,16 +103,16 @@ impl World {
             EntityStorage::AOE(aoe) => aoe.remove_entity(entity),
         }
     }
-    pub fn get_component<C: Any + 'static>(&self, entity: &EntityId) -> Option<&C> {
+    pub fn component<C: Any + 'static>(&self, entity: &EntityId) -> Option<&C> {
         match &self.storage {
             EntityStorage::AOC(aoc) => aoc.get_component::<C>(entity),
-            EntityStorage::AOE(aoe) => aoe.get_component::<C>(entity),
+            EntityStorage::AOE(aoe) => aoe.component::<C>(entity),
         }
     }
-    pub fn get_mut_component<C: Any + 'static>(&mut self, entity: &EntityId) -> Option<&mut C> {
+    pub fn mut_component<C: Any + 'static>(&mut self, entity: &EntityId) -> Option<&mut C> {
         match &mut self.storage {
             EntityStorage::AOC(aoc) => aoc.get_mut_component::<C>(entity),
-            EntityStorage::AOE(aoe) => aoe.get_mut_component::<C>(entity),
+            EntityStorage::AOE(aoe) => aoe.mut_component::<C>(entity),
         }
     }
     pub fn insert_component<C: Any + 'static>(&mut self, entity: &EntityId, component: C) {
