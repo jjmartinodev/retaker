@@ -30,17 +30,17 @@ impl World {
         EntityRef {
             id: *entity,
             storage: &self.storage,
-            entity: None
+            entity: None,
         }
     }
     pub fn mut_entity<'a>(&'a mut self, entity: &EntityId) -> EntityMut<'a> {
         EntityMut {
             id: *entity,
             storage: &mut self.storage,
-            entity: None
+            entity: None,
         }
     }
-    pub fn query<With: Any + 'static>(&self) -> Vec<EntityId> {
+    pub fn query<With: Any>(&self) -> Vec<EntityId> {
         match &self.storage {
             EntityStorage::AOC(aoc) => aoc
                 .get_component_list::<With>()
@@ -103,25 +103,207 @@ impl World {
             EntityStorage::AOE(aoe) => aoe.remove_entity(entity),
         }
     }
-    pub fn component<C: Any + 'static>(&self, entity: &EntityId) -> Option<&C> {
+    pub fn component<C: Any>(&self, entity: &EntityId) -> Option<&C> {
         match &self.storage {
             EntityStorage::AOC(aoc) => aoc.get_component::<C>(entity),
             EntityStorage::AOE(aoe) => aoe.component::<C>(entity),
         }
     }
-    pub fn mut_component<C: Any + 'static>(&mut self, entity: &EntityId) -> Option<&mut C> {
+    pub fn mut_component<C: Any>(&mut self, entity: &EntityId) -> Option<&mut C> {
         match &mut self.storage {
             EntityStorage::AOC(aoc) => aoc.get_mut_component::<C>(entity),
             EntityStorage::AOE(aoe) => aoe.mut_component::<C>(entity),
         }
     }
-    pub fn insert_component<C: Any + 'static>(&mut self, entity: &EntityId, component: C) {
+    pub fn insert_component<C: Any>(&mut self, entity: &EntityId, component: C) {
         match &mut self.storage {
             EntityStorage::AOC(aoc) => aoc.insert_component::<C>(entity, component),
             EntityStorage::AOE(aoe) => aoe.insert_component::<C>(entity, component),
         }
     }
-    pub fn remove_component<C: Any + 'static>(&mut self, entity: &EntityId) -> Option<C> {
+    pub fn insert_component2<C1: Any, C2: Any>(
+        &mut self,
+        entity: &EntityId,
+        c1: C1,
+        c2: C2,
+    ) {
+        match &mut self.storage {
+            EntityStorage::AOC(aoc) => {
+                aoc.insert_component::<C1>(entity, c1);
+                aoc.insert_component::<C2>(entity, c2);
+            },
+            EntityStorage::AOE(aoe) => {
+                aoe.insert_component::<C1>(entity, c1);
+                aoe.insert_component::<C2>(entity, c2);
+            },
+        }
+    }
+    pub fn insert_component3<C1: Any, C2: Any, C3: Any>(
+        &mut self,
+        entity: &EntityId,
+        c1: C1,
+        c2: C2,
+        c3: C3,
+    ) {
+        match &mut self.storage {
+            EntityStorage::AOC(aoc) => {
+                aoc.insert_component::<C1>(entity, c1);
+                aoc.insert_component::<C2>(entity, c2);
+                aoc.insert_component::<C3>(entity, c3);
+            },
+            EntityStorage::AOE(aoe) => {
+                aoe.insert_component::<C1>(entity, c1);
+                aoe.insert_component::<C2>(entity, c2);
+                aoe.insert_component::<C3>(entity, c3);
+            },
+        }
+    }
+    pub fn insert_component4<C1: Any, C2: Any, C3: Any, C4: Any>(
+        &mut self,
+        entity: &EntityId,
+        c1: C1,
+        c2: C2,
+        c3: C3,
+        c4: C4,
+    ) {
+        match &mut self.storage {
+            EntityStorage::AOC(aoc) => {
+                aoc.insert_component::<C1>(entity, c1);
+                aoc.insert_component::<C2>(entity, c2);
+                aoc.insert_component::<C3>(entity, c3);
+                aoc.insert_component::<C4>(entity, c4);
+            },
+            EntityStorage::AOE(aoe) => {
+                aoe.insert_component::<C1>(entity, c1);
+                aoe.insert_component::<C2>(entity, c2);
+                aoe.insert_component::<C3>(entity, c3);
+                aoe.insert_component::<C4>(entity, c4);
+            },
+        }
+    }
+    pub fn insert_component5<C1: Any, C2: Any, C3: Any, C4: Any, C5: Any>(
+        &mut self,
+        entity: &EntityId,
+        c1: C1,
+        c2: C2,
+        c3: C3,
+        c4: C4,
+        c5: C5,
+    ) {
+        match &mut self.storage {
+            EntityStorage::AOC(aoc) => {
+                aoc.insert_component::<C1>(entity, c1);
+                aoc.insert_component::<C2>(entity, c2);
+                aoc.insert_component::<C3>(entity, c3);
+                aoc.insert_component::<C4>(entity, c4);
+                aoc.insert_component::<C5>(entity, c5);
+            },
+            EntityStorage::AOE(aoe) => {
+                aoe.insert_component::<C1>(entity, c1);
+                aoe.insert_component::<C2>(entity, c2);
+                aoe.insert_component::<C3>(entity, c3);
+                aoe.insert_component::<C4>(entity, c4);
+                aoe.insert_component::<C5>(entity, c5);
+            },
+        }
+    }
+    pub fn insert_component6<C1: Any, C2: Any, C3: Any, C4: Any, C5: Any, C6: Any>(
+        &mut self,
+        entity: &EntityId,
+        c1: C1,
+        c2: C2,
+        c3: C3,
+        c4: C4,
+        c5: C5,
+        c6: C6,
+    ) {
+        match &mut self.storage {
+            EntityStorage::AOC(aoc) => {
+                aoc.insert_component::<C1>(entity, c1);
+                aoc.insert_component::<C2>(entity, c2);
+                aoc.insert_component::<C3>(entity, c3);
+                aoc.insert_component::<C4>(entity, c4);
+                aoc.insert_component::<C5>(entity, c5);
+                aoc.insert_component::<C6>(entity, c6);
+            },
+            EntityStorage::AOE(aoe) => {
+                aoe.insert_component::<C1>(entity, c1);
+                aoe.insert_component::<C2>(entity, c2);
+                aoe.insert_component::<C3>(entity, c3);
+                aoe.insert_component::<C4>(entity, c4);
+                aoe.insert_component::<C5>(entity, c5);
+                aoe.insert_component::<C6>(entity, c6);
+            },
+        }
+    }
+    pub fn insert_component7<C1: Any, C2: Any, C3: Any, C4: Any, C5: Any, C6: Any, C7: Any>(
+        &mut self,
+        entity: &EntityId,
+        c1: C1,
+        c2: C2,
+        c3: C3,
+        c4: C4,
+        c5: C5,
+        c6: C6,
+        c7: C7,
+    ) {
+        match &mut self.storage {
+            EntityStorage::AOC(aoc) => {
+                aoc.insert_component::<C1>(entity, c1);
+                aoc.insert_component::<C2>(entity, c2);
+                aoc.insert_component::<C3>(entity, c3);
+                aoc.insert_component::<C4>(entity, c4);
+                aoc.insert_component::<C5>(entity, c5);
+                aoc.insert_component::<C6>(entity, c6);
+                aoc.insert_component::<C7>(entity, c7);
+            },
+            EntityStorage::AOE(aoe) => {
+                aoe.insert_component::<C1>(entity, c1);
+                aoe.insert_component::<C2>(entity, c2);
+                aoe.insert_component::<C3>(entity, c3);
+                aoe.insert_component::<C4>(entity, c4);
+                aoe.insert_component::<C5>(entity, c5);
+                aoe.insert_component::<C6>(entity, c6);
+                aoe.insert_component::<C7>(entity, c7);
+            },
+        }
+    }
+    pub fn insert_component8<C1: Any, C2: Any, C3: Any, C4: Any, C5: Any, C6: Any, C7: Any, C8: Any>(
+        &mut self,
+        entity: &EntityId,
+        c1: C1,
+        c2: C2,
+        c3: C3,
+        c4: C4,
+        c5: C5,
+        c6: C6,
+        c7: C7,
+        c8: C8,
+    ) {
+        match &mut self.storage {
+            EntityStorage::AOC(aoc) => {
+                aoc.insert_component::<C1>(entity, c1);
+                aoc.insert_component::<C2>(entity, c2);
+                aoc.insert_component::<C3>(entity, c3);
+                aoc.insert_component::<C4>(entity, c4);
+                aoc.insert_component::<C5>(entity, c5);
+                aoc.insert_component::<C6>(entity, c6);
+                aoc.insert_component::<C7>(entity, c7);
+                aoc.insert_component::<C8>(entity, c8);
+            },
+            EntityStorage::AOE(aoe) => {
+                aoe.insert_component::<C1>(entity, c1);
+                aoe.insert_component::<C2>(entity, c2);
+                aoe.insert_component::<C3>(entity, c3);
+                aoe.insert_component::<C4>(entity, c4);
+                aoe.insert_component::<C5>(entity, c5);
+                aoe.insert_component::<C6>(entity, c6);
+                aoe.insert_component::<C7>(entity, c7);
+                aoe.insert_component::<C8>(entity, c8);
+            },
+        }
+    }
+    pub fn remove_component<C: Any>(&mut self, entity: &EntityId) -> Option<C> {
         match &mut self.storage {
             EntityStorage::AOC(aoc) => aoc.remove_component::<C>(entity),
             EntityStorage::AOE(aoe) => aoe.remove_component::<C>(entity),
