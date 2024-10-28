@@ -5,6 +5,9 @@ use varset::VarSet;
 
 use crate::entity::EntityId;
 
+/// ## Array Of Entities
+///
+/// Stores entity components in containers separated by entity
 pub struct AOEStorage {
     entities: HashMap<EntityId, VarSet>,
 }
