@@ -18,8 +18,7 @@ pub struct IsBirthday;
 
 fn add_dogs(world: &mut World) {
     let snowflake = world.create_entity();
-    world.insert_component(&snowflake, Name(String::from("Snowflake")));
-    world.insert_component(&snowflake, Dog);
+    world.insert_component2(&snowflake, Name(String::from("Snowflake")), Dog);
 
     let some_dog = world.create_entity();
     world.insert_component(&some_dog, Dog);
@@ -27,15 +26,16 @@ fn add_dogs(world: &mut World) {
 
 fn add_people(world: &mut World) {
     let francis = world.create_entity();
-    world.insert_component(&francis, Name(String::from("Francis")));
-    world.insert_component(&francis, Person);
-    world.insert_component(&francis, Age(18));
+    world.insert_component3(&francis, Name(String::from("Francis")), Person, Age(18));
 
     let camila = world.create_entity();
-    world.insert_component(&camila, Name(String::from("Camila")));
-    world.insert_component(&camila, Person);
-    world.insert_component(&camila, Age(12));
-    world.insert_component(&camila, IsBirthday);
+    world.insert_component4(
+        &camila,
+        Name(String::from("Camila")),
+        Person,
+        Age(12),
+        IsBirthday,
+    );
 }
 
 fn greet_people(world: &mut World) {
