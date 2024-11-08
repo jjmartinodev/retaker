@@ -25,7 +25,31 @@ impl<T: State> Scheduler<T> {
             self.systems.push(system);
         }
     }
-    pub fn run(&mut self) {
+    pub fn run_start_systems(&mut self) {
+        for system in &self.systems {
+            match system {
+                System::Start(system) => system(&mut self.state),
+                _ => ()
+            }
+        }
+    }
+    pub fn run_uptade_systems(&mut self) {
+        for system in &self.systems {
+            match system {
+                System::Uptade(system) => system(&mut self.state),
+                _ => ()
+            }
+        }
+    }
+    pub fn run_exit_systems(&mut self) {
+        for system in &self.systems {
+            match system {
+                System::Exit(system) => system(&mut self.state),
+                _ => ()
+            }
+        }
+    }
+    pub fn run(mut self) {
         for system in &self.systems {
             match system {
                 System::Start(system) => system(&mut self.state),
