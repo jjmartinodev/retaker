@@ -2,10 +2,11 @@ use std::any::{Any, TypeId};
 
 use hashbrown::HashMap;
 
-use crate::aoe::AOEStorage;
+use crate::aoe::{AOEStorage, Entity};
 use crate::entity::{EntityId, EntityMut, EntityRef};
 
 use crate::aoc::AOCStorage;
+use crate::scheduler::State;
 
 pub enum EntityStorage {
     AOC(AOCStorage),
@@ -16,6 +17,7 @@ pub struct World {
     storage: EntityStorage,
     next_entity_id: u32,
     unique_entities: HashMap<TypeId, Box<dyn Any>>,
+    alive: bool
 }
 
 impl World {
@@ -24,13 +26,22 @@ impl World {
             storage,
             next_entity_id: 0,
             unique_entities: HashMap::new(),
+            alive: true
         }
+    }
+    pub fn exit(&mut self) {
+        self.alive = false;
     }
     pub fn ref_entity<'a>(&'a self, entity: &EntityId) -> EntityRef<'a> {
         EntityRef {
             id: *entity,
+            entity: match &self.storage {
+                EntityStorage::AOC(_) => None,
+                EntityStorage::AOE(aoe) => {
+                    Some((aoe.raw_map().get(entity).unwrap()) as *const Entity)
+                }
+            },
             storage: &self.storage,
-            entity: None,
         }
     }
     pub fn mut_entity<'a>(&'a mut self, entity: &EntityId) -> EntityMut<'a> {
@@ -105,13 +116,13 @@ impl World {
     }
     pub fn component<C: Any>(&self, entity: &EntityId) -> Option<&C> {
         match &self.storage {
-            EntityStorage::AOC(aoc) => aoc.get_component::<C>(entity),
+            EntityStorage::AOC(aoc) => aoc.component::<C>(entity),
             EntityStorage::AOE(aoe) => aoe.component::<C>(entity),
         }
     }
     pub fn mut_component<C: Any>(&mut self, entity: &EntityId) -> Option<&mut C> {
         match &mut self.storage {
-            EntityStorage::AOC(aoc) => aoc.get_mut_component::<C>(entity),
+            EntityStorage::AOC(aoc) => aoc.mut_component::<C>(entity),
             EntityStorage::AOE(aoe) => aoe.mut_component::<C>(entity),
         }
     }
@@ -121,21 +132,16 @@ impl World {
             EntityStorage::AOE(aoe) => aoe.insert_component::<C>(entity, component),
         }
     }
-    pub fn insert_component2<C1: Any, C2: Any>(
-        &mut self,
-        entity: &EntityId,
-        c1: C1,
-        c2: C2,
-    ) {
+    pub fn insert_component2<C1: Any, C2: Any>(&mut self, entity: &EntityId, c1: C1, c2: C2) {
         match &mut self.storage {
             EntityStorage::AOC(aoc) => {
                 aoc.insert_component::<C1>(entity, c1);
                 aoc.insert_component::<C2>(entity, c2);
-            },
+            }
             EntityStorage::AOE(aoe) => {
                 aoe.insert_component::<C1>(entity, c1);
                 aoe.insert_component::<C2>(entity, c2);
-            },
+            }
         }
     }
     pub fn insert_component3<C1: Any, C2: Any, C3: Any>(
@@ -150,12 +156,12 @@ impl World {
                 aoc.insert_component::<C1>(entity, c1);
                 aoc.insert_component::<C2>(entity, c2);
                 aoc.insert_component::<C3>(entity, c3);
-            },
+            }
             EntityStorage::AOE(aoe) => {
                 aoe.insert_component::<C1>(entity, c1);
                 aoe.insert_component::<C2>(entity, c2);
                 aoe.insert_component::<C3>(entity, c3);
-            },
+            }
         }
     }
     pub fn insert_component4<C1: Any, C2: Any, C3: Any, C4: Any>(
@@ -172,13 +178,13 @@ impl World {
                 aoc.insert_component::<C2>(entity, c2);
                 aoc.insert_component::<C3>(entity, c3);
                 aoc.insert_component::<C4>(entity, c4);
-            },
+            }
             EntityStorage::AOE(aoe) => {
                 aoe.insert_component::<C1>(entity, c1);
                 aoe.insert_component::<C2>(entity, c2);
                 aoe.insert_component::<C3>(entity, c3);
                 aoe.insert_component::<C4>(entity, c4);
-            },
+            }
         }
     }
     pub fn insert_component5<C1: Any, C2: Any, C3: Any, C4: Any, C5: Any>(
@@ -197,14 +203,14 @@ impl World {
                 aoc.insert_component::<C3>(entity, c3);
                 aoc.insert_component::<C4>(entity, c4);
                 aoc.insert_component::<C5>(entity, c5);
-            },
+            }
             EntityStorage::AOE(aoe) => {
                 aoe.insert_component::<C1>(entity, c1);
                 aoe.insert_component::<C2>(entity, c2);
                 aoe.insert_component::<C3>(entity, c3);
                 aoe.insert_component::<C4>(entity, c4);
                 aoe.insert_component::<C5>(entity, c5);
-            },
+            }
         }
     }
     pub fn insert_component6<C1: Any, C2: Any, C3: Any, C4: Any, C5: Any, C6: Any>(
@@ -225,7 +231,7 @@ impl World {
                 aoc.insert_component::<C4>(entity, c4);
                 aoc.insert_component::<C5>(entity, c5);
                 aoc.insert_component::<C6>(entity, c6);
-            },
+            }
             EntityStorage::AOE(aoe) => {
                 aoe.insert_component::<C1>(entity, c1);
                 aoe.insert_component::<C2>(entity, c2);
@@ -233,7 +239,7 @@ impl World {
                 aoe.insert_component::<C4>(entity, c4);
                 aoe.insert_component::<C5>(entity, c5);
                 aoe.insert_component::<C6>(entity, c6);
-            },
+            }
         }
     }
     pub fn insert_component7<C1: Any, C2: Any, C3: Any, C4: Any, C5: Any, C6: Any, C7: Any>(
@@ -256,7 +262,7 @@ impl World {
                 aoc.insert_component::<C5>(entity, c5);
                 aoc.insert_component::<C6>(entity, c6);
                 aoc.insert_component::<C7>(entity, c7);
-            },
+            }
             EntityStorage::AOE(aoe) => {
                 aoe.insert_component::<C1>(entity, c1);
                 aoe.insert_component::<C2>(entity, c2);
@@ -265,10 +271,19 @@ impl World {
                 aoe.insert_component::<C5>(entity, c5);
                 aoe.insert_component::<C6>(entity, c6);
                 aoe.insert_component::<C7>(entity, c7);
-            },
+            }
         }
     }
-    pub fn insert_component8<C1: Any, C2: Any, C3: Any, C4: Any, C5: Any, C6: Any, C7: Any, C8: Any>(
+    pub fn insert_component8<
+        C1: Any,
+        C2: Any,
+        C3: Any,
+        C4: Any,
+        C5: Any,
+        C6: Any,
+        C7: Any,
+        C8: Any,
+    >(
         &mut self,
         entity: &EntityId,
         c1: C1,
@@ -290,7 +305,7 @@ impl World {
                 aoc.insert_component::<C6>(entity, c6);
                 aoc.insert_component::<C7>(entity, c7);
                 aoc.insert_component::<C8>(entity, c8);
-            },
+            }
             EntityStorage::AOE(aoe) => {
                 aoe.insert_component::<C1>(entity, c1);
                 aoe.insert_component::<C2>(entity, c2);
@@ -300,7 +315,7 @@ impl World {
                 aoe.insert_component::<C6>(entity, c6);
                 aoe.insert_component::<C7>(entity, c7);
                 aoe.insert_component::<C8>(entity, c8);
-            },
+            }
         }
     }
     pub fn remove_component<C: Any>(&mut self, entity: &EntityId) -> Option<C> {
@@ -308,5 +323,11 @@ impl World {
             EntityStorage::AOC(aoc) => aoc.remove_component::<C>(entity),
             EntityStorage::AOE(aoe) => aoe.remove_component::<C>(entity),
         }
+    }
+}
+
+impl State for World {
+    fn alive(&self) -> bool {
+        self.alive
     }
 }

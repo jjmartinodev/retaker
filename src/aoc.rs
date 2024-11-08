@@ -90,14 +90,14 @@ impl AOCStorage {
             None
         }
     }
-    pub fn get_component<C: Any>(&self, entity: &EntityId) -> Option<&C> {
+    pub fn component<C: Any>(&self, entity: &EntityId) -> Option<&C> {
         if let Some(list) = self.get_component_list::<C>() {
             list.get(entity)
         } else {
             None
         }
     }
-    pub fn get_mut_component<C: Any>(&mut self, entity: &EntityId) -> Option<&mut C> {
+    pub fn mut_component<C: Any>(&mut self, entity: &EntityId) -> Option<&mut C> {
         if let Some(list) = self.get_mut_component_list::<C>() {
             list.get_mut(entity)
         } else {

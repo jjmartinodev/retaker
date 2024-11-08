@@ -78,16 +78,17 @@ fn celebrate_birthday(world: &mut World) {
 }
 
 fn main() {
-    let mut world = World::new(EntityStorage::AOC(AOCStorage::new()));
-    let mut scheduler = Scheduler::new();
+    let world = World::new(EntityStorage::AOC(AOCStorage::new()));
+    let mut scheduler = Scheduler::new(world);
 
-    scheduler.add_system(System::Start(add_dogs));
-    scheduler.add_system(System::Start(add_people));
-    scheduler.add_system(System::Uptade(celebrate_birthday));
-    scheduler.add_system(System::Uptade(greet_people));
-    scheduler.add_system(System::Uptade(greet_dogs));
+    scheduler.add_systems([
+        System::Start(add_dogs),
+        System::Start(add_people),
+        System::Start(greet_people),
+        System::Start(celebrate_birthday),
+        System::Start(greet_dogs),
+    ]);
 
-    scheduler.start(&mut world);
-    scheduler.uptade(&mut world);
+    scheduler.run();
 }
 ```

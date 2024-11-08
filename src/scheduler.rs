@@ -1,55 +1,58 @@
+pub trait State {
+    fn alive(&self) -> bool {false}
+}
+
 pub enum System<T> {
     Start (fn(&mut T) -> ()),
     Uptade (fn(&mut T) -> ()),
     Exit (fn(&mut T) -> ()),
 }
 
-pub struct Scheduler<T> {
-    start_systems: Vec<System<T>>,
-    uptade_systems: Vec<System<T>>,
-    exit_systems: Vec<System<T>>,
+pub struct Scheduler<T: State> {
+    state: T,
+    systems: Vec<System<T>>,
 }
 
-impl<T> Scheduler<T> {
-    pub fn new() -> Scheduler<T> {
+impl<T: State> Scheduler<T> {
+    pub fn new(state: T) -> Scheduler<T> {
         Scheduler {
-            start_systems: vec![],
-            uptade_systems: vec![],
-            exit_systems: vec![],
+            state,
+            systems: vec![],
         }
     }
-    pub fn add_system(&mut self, system: System<T>) {
-        match system {
-            System::Start(_) => self.start_systems.push(system),
-            System::Uptade(_) => self.uptade_systems.push(system),
-            System::Exit(_) => self.exit_systems.push(system),
+    pub fn add_systems<const N: usize>(&mut self, systems: [System<T>; N]) {
+        for system in systems {
+            self.systems.push(system);
         }
     }
-    pub fn start(&mut self, handler: &mut T) {
-        for system in &self.start_systems {
-            if let System::Start(start) = system {
-                start(handler);
+    pub fn run(&mut self) {
+        for system in &self.systems {
+            match system {
+                System::Start(system) => system(&mut self.state),
+                _ => ()
             }
         }
-    }
-    pub fn uptade(&mut self, handler: &mut T) {
-        for system in &self.uptade_systems {
-            if let System::Uptade(uptade) = system {
-                uptade(handler);
+        'main: loop {
+            if self.systems.len() == 0 {
+                break 'main;
+            }
+            for system in &self.systems {
+                match system {
+                    System::Uptade(system) => system(&mut self.state),
+                    _ => ()
+                }
+                if !self.state.alive() {
+                    break 'main;
+                } else {
+                    continue;
+                }
             }
         }
-    }
-    pub fn exit(&mut self, handler: &mut T) {
-        for system in &self.exit_systems {
-            if let System::Exit(exit) = system {
-                exit(handler);
+        for system in &self.systems {
+            match system {
+                System::Exit(system) => system(&mut self.state),
+                _ => ()
             }
         }
-    }
-}
-
-impl<T> Default for Scheduler<T> {
-    fn default() -> Self {
-        Self::new()
     }
 }
