@@ -4,91 +4,55 @@
 # Example :
 ```
 use retaker::{
-    aoc::AOCStorage,
-    scheduler::{Scheduler, System},
-    world::{EntityStorage, World},
+    entity::EntityIdGenerator, system::Scheduler, world::World
 };
 
-#[derive(Debug)]
-pub struct Name(String);
-pub struct Person;
-pub struct Dog;
-pub struct Age(u32);
-pub struct IsBirthday;
-
-fn add_dogs(world: &mut World) {
-    let snowflake = world.create_entity();
-    world.insert_component2(&snowflake, Name(String::from("Snowflake")), Dog);
-
-    let some_dog = world.create_entity();
-    world.insert_component(&some_dog, Dog);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum SystemGroups {
+    SomeSystemGroup,
 }
 
-fn add_people(world: &mut World) {
-    let francis = world.create_entity();
-    world.insert_component3(&francis, Name(String::from("Francis")), Person, Age(18));
-
-    let camila = world.create_entity();
-    world.insert_component4(
-        &camila,
-        Name(String::from("Camila")),
-        Person,
-        Age(12),
-        IsBirthday,
-    );
+pub struct State {
+    world: World,
+    generator: EntityIdGenerator
 }
 
-fn greet_people(world: &mut World) {
-    for entity in world.query::<Person>() {
-        let person = world.ref_entity(&entity);
-        if let Some(name) = person.component::<Name>() {
-            println!("good morning {}!", name.0);
-            if let Some(age) = person.component::<Age>() {
-                println!("{}, {} years old", name.0, age.0);
-            }
-        } else {
-            println!("this person doesn't have a name!")
-        }
-    }
-}
+pub struct MyComponent(String);
+pub struct Exclude;
 
-fn greet_dogs(world: &mut World) {
-    for entity in world.query::<Dog>() {
-        let dog = world.ref_entity(&entity);
-        if let Some(name) = dog.component::<Name>() {
-            println!("awww, hi {}!", name.0)
-        } else {
-            println!("this dog doesn't have a name!")
-        }
-    }
-}
+fn system(state: &mut State) {
+    let entity1 = state.generator.generate();
+    state.world.insert_component(&entity1, MyComponent(String::from("hi!!!")));
 
-fn celebrate_birthday(world: &mut World) {
-    for entity in world.query::<IsBirthday>() {
-        let mut someone = world.mut_entity(&entity);
-        if let Some(name) = someone.component::<Name>() {
-            println!("happy birthday {}!", name.0);
-            if let Some(age) = someone.mut_component::<Age>() {
-                age.0 += 1;
-            }
-        } else {
-            println!("happy birthday to you!")
+    let entity2 = state.generator.generate();
+    state.world.insert_component(&entity2, MyComponent(String::from("bye!!!")));
+
+    let entity3 = state.generator.generate();
+    state.world.insert_component(&entity3, MyComponent(String::from("excluded!!!")));
+    state.world.insert_component(&entity3, Exclude);
+
+    {
+        let mut query = state.world.query::<MyComponent>();
+        query.filter_without::<Exclude>(&mut state.world);
+        for entity in query {
+            let mut string = state.world.mut_component::<MyComponent>(&entity).unwrap();
+
+            string.0 = string.0.to_uppercase();
+    
+            println!("{}", string.0);
         }
     }
 }
 
 fn main() {
-    let world = World::new(EntityStorage::AOC(AOCStorage::new()));
-    let mut scheduler = Scheduler::new(world);
+    let mut state = State {
+        world: World::new(),
+        generator: EntityIdGenerator::new()
+    };
+    let mut scheduler: Scheduler<SystemGroups, State> = Scheduler::new();
 
-    scheduler.add_systems([
-        System::Start(add_dogs),
-        System::Start(add_people),
-        System::Start(greet_people),
-        System::Start(celebrate_birthday),
-        System::Start(greet_dogs),
-    ]);
+    scheduler.add_system(system, SystemGroups::SomeSystemGroup);
 
-    scheduler.run();
+    scheduler.run_group(&mut state, SystemGroups::SomeSystemGroup);
 }
 ```
