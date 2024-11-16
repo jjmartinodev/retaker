@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "retaker"
-version = "0.5.5"
+version = "0.6.5"
 dependencies = [
  "hashbrown",
  "parking_lot",
