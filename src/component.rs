@@ -10,86 +10,84 @@ use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use crate::{entity::EntityId, world::ComponentList};
 
-pub struct ComponentReadGuard<'a> {
+pub struct ComponentReadGuard<'a, C: Any> {
     access: RwLockReadGuard<'a, Box<dyn ComponentList>>,
+    phantom: PhantomData<C>,
 }
 
-pub struct ComponentWriteGuard<'a> {
+pub struct ComponentWriteGuard<'a, C: Any> {
     access: RwLockWriteGuard<'a, Box<dyn ComponentList>>,
+    phantom: PhantomData<C>,
 }
 
 pub struct ComponentRef<'a, C: Any> {
-    access: ComponentReadGuard<'a>,
-    phantom: PhantomData<C>,
+    access: ComponentReadGuard<'a, C>,
     entity: EntityId,
 }
 
 pub struct ComponentMut<'a, C: Any> {
-    access: ComponentWriteGuard<'a>,
-    phantom: PhantomData<C>,
+    access: ComponentWriteGuard<'a, C>,
     entity: EntityId,
 }
 
 pub struct ManyComponentMut<'a, C: Any, const N: usize> {
-    access: ComponentWriteGuard<'a>,
-    phantom: PhantomData<C>,
+    access: ComponentWriteGuard<'a, C>,
     entities: [EntityId; N],
 }
 
-impl<'a> ComponentWriteGuard<'a> {
-    pub fn new<C: Any>(
+impl<'a, C: Any> ComponentWriteGuard<'a, C> {
+    pub fn new(
         access: &'a RwLock<Box<(dyn ComponentList + 'static)>>,
-    ) -> ComponentWriteGuard<'a> {
+    ) -> ComponentWriteGuard<'a, C> {
         ComponentWriteGuard {
             access: access.write(),
+            phantom: PhantomData
         }
     }
 }
 
-impl<'a> ComponentReadGuard<'a> {
-    pub fn new<C: Any>(
+impl<'a, C: Any> ComponentReadGuard<'a, C> {
+    pub fn new(
         access: &'a RwLock<Box<(dyn ComponentList + 'static)>>,
-    ) -> ComponentReadGuard<'a> {
+    ) -> ComponentReadGuard<'a, C> {
         ComponentReadGuard {
             access: access.read(),
+            phantom: PhantomData
         }
     }
 }
 
 impl<'a, C: Any> ComponentRef<'a, C> {
-    pub fn new(list: ComponentReadGuard<'a>, entity: &EntityId) -> ComponentRef<'a, C> {
+    pub fn new(list: ComponentReadGuard<'a, C>, entity: &EntityId) -> ComponentRef<'a, C> {
         ComponentRef {
             access: list,
-            phantom: PhantomData,
             entity: *entity,
         }
     }
-    pub fn drop(self) -> ComponentReadGuard<'a> {
+    pub fn drop(self) -> ComponentReadGuard<'a, C> {
         self.access
     }
 }
 
 impl<'a, C: Any> ComponentMut<'a, C> {
-    pub fn new(list: ComponentWriteGuard<'a>, entity: &EntityId) -> ComponentMut<'a, C> {
+    pub fn new(list: ComponentWriteGuard<'a, C>, entity: &EntityId) -> ComponentMut<'a, C> {
         ComponentMut {
             access: list,
-            phantom: PhantomData,
             entity: *entity,
         }
     }
-    pub fn drop(self) -> ComponentWriteGuard<'a> {
+    pub fn drop(self) -> ComponentWriteGuard<'a, C> {
         self.access
     }
 }
 
 impl<'a, C: Any, const N: usize> ManyComponentMut<'a, C, N> {
     pub fn new(
-        list: ComponentWriteGuard<'a>,
+        list: ComponentWriteGuard<'a, C>,
         entities: [EntityId; N],
     ) -> ManyComponentMut<'a, C, N> {
         ManyComponentMut {
             access: list,
-            phantom: PhantomData,
             entities,
         }
     }
@@ -102,7 +100,7 @@ impl<'a, C: Any, const N: usize> ManyComponentMut<'a, C, N> {
             .get_many_mut(self.entities.each_ref())
             .unwrap()
     }
-    pub fn drop(self) -> ComponentWriteGuard<'a> {
+    pub fn drop(self) -> ComponentWriteGuard<'a, C> {
         self.access
     }
 }

@@ -78,22 +78,22 @@ impl World {
             None
         }
     }
-    pub fn mut_component_list<'a, C: Any>(&'a self) -> Option<ComponentWriteGuard<'a>> {
+    pub fn mut_component_list<'a, C: Any>(&'a self) -> Option<ComponentWriteGuard<'a, C>> {
         if let Some(list) = self.component_lists.get(&TypeId::of::<C>()) {
             if list.is_locked() {
                 return None;
             }
-            Some(ComponentWriteGuard::new::<C>(list))
+            Some(ComponentWriteGuard::<C>::new(list))
         } else {
             None
         }
     }
-    pub fn component_list<'a, C: Any>(&'a self) -> Option<ComponentReadGuard<'a>> {
+    pub fn component_list<'a, C: Any>(&'a self) -> Option<ComponentReadGuard<'a, C>> {
         if let Some(list) = self.component_lists.get(&TypeId::of::<C>()) {
             if list.is_locked_exclusive() {
                 return None;
             }
-            Some(ComponentReadGuard::new::<C>(list))
+            Some(ComponentReadGuard::<C>::new(list))
         } else {
             None
         }
@@ -249,33 +249,33 @@ impl Default for World {
 }
 
 impl Query {
-    pub fn filter_with<C: Any>(&mut self, world: &mut World) {
+    pub fn filter_with<C: Any>(&mut self, world: &World) {
         self.entities.retain(|e| world.has_component::<C>(e));
     }
-    pub fn filter_without<C: Any>(&mut self, world: &mut World) {
+    pub fn filter_without<C: Any>(&mut self, world: &World) {
         self.entities.retain(|e| !world.has_component::<C>(e));
     }
-    pub fn filter_or<A: Any, B: Any>(&mut self, world: &mut World) {
+    pub fn filter_or<A: Any, B: Any>(&mut self, world: &World) {
         self.entities
             .retain(|e| world.has_component::<A>(e) || world.has_component::<B>(e));
     }
-    pub fn filter_and<A: Any, B: Any>(&mut self, world: &mut World) {
+    pub fn filter_and<A: Any, B: Any>(&mut self, world: &World) {
         self.entities
             .retain(|e| world.has_component::<A>(e) && world.has_component::<B>(e));
     }
-    pub fn filter_xor<A: Any, B: Any>(&mut self, world: &mut World) {
+    pub fn filter_xor<A: Any, B: Any>(&mut self, world: &World) {
         self.entities
             .retain(|e| world.has_component::<A>(e) ^ world.has_component::<B>(e));
     }
-    pub fn filter_nor<A: Any, B: Any>(&mut self, world: &mut World) {
+    pub fn filter_nor<A: Any, B: Any>(&mut self, world: &World) {
         self.entities
             .retain(|e| !(world.has_component::<A>(e) || world.has_component::<B>(e)));
     }
-    pub fn filter_nand<A: Any, B: Any>(&mut self, world: &mut World) {
+    pub fn filter_nand<A: Any, B: Any>(&mut self, world: &World) {
         self.entities
             .retain(|e| !(world.has_component::<A>(e) && world.has_component::<B>(e)));
     }
-    pub fn filter_xnor<A: Any, B: Any>(&mut self, world: &mut World) {
+    pub fn filter_xnor<A: Any, B: Any>(&mut self, world: &World) {
         self.entities
             .retain(|e| !(world.has_component::<A>(e) ^ world.has_component::<B>(e)));
     }

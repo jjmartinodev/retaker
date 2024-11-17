@@ -1,6 +1,6 @@
-use retaker::{
-    entity::EntityIdGenerator, system::Scheduler, world::World
-};
+
+
+use retaker::{entity::DefaultEntityIdGenerator, system::Scheduler, world::World};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum SystemGroups {
@@ -9,8 +9,11 @@ pub enum SystemGroups {
 
 pub struct State {
     world: World,
-    generator: EntityIdGenerator
+    generator: DefaultEntityIdGenerator,
 }
+
+unsafe impl Send for State {}
+unsafe impl Sync for State {}
 
 pub struct MyComponent(String);
 pub struct Exclude;
@@ -23,17 +26,19 @@ fn system(state: &mut State) {
     state.world.insert_component(&entity2, MyComponent(String::from("bye!!!")));
 
     let entity3 = state.generator.generate();
-    state.world.insert_component(&entity3, MyComponent(String::from("excluded!!!")));
-    state.world.insert_component(&entity3, Exclude);
+    state.world.insert_component2(
+        &entity3,
+        (MyComponent(String::from("excluded!!!")), Exclude),
+    );
 
     {
         let mut query = state.world.query::<MyComponent>();
-        query.filter_without::<Exclude>(&mut state.world);
+        query.filter_without::<Exclude>(&state.world);
         for entity in query {
             let mut string = state.world.mut_component::<MyComponent>(&entity).unwrap();
 
             string.0 = string.0.to_uppercase();
-    
+
             println!("{}", string.0);
         }
     }
@@ -41,8 +46,8 @@ fn system(state: &mut State) {
 
 fn main() {
     let mut state = State {
-        world: World::new(),
-        generator: EntityIdGenerator::new()
+        world: World::new().into(),
+        generator: DefaultEntityIdGenerator::new().into(),
     };
     let mut scheduler: Scheduler<SystemGroups, State> = Scheduler::new();
 

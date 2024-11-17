@@ -4,7 +4,7 @@ pub struct EntityId {
     id: u32,
 }
 
-pub struct EntityIdGenerator {
+pub struct DefaultEntityIdGenerator {
     next_id: u32
 }
 
@@ -17,9 +17,9 @@ impl EntityId {
     }
 }
 
-impl EntityIdGenerator {
-    pub fn new() -> EntityIdGenerator {
-        EntityIdGenerator {
+impl DefaultEntityIdGenerator {
+    pub fn new() -> DefaultEntityIdGenerator {
+        DefaultEntityIdGenerator {
             next_id: 1000
         }
     }
@@ -30,7 +30,7 @@ impl EntityIdGenerator {
     }
 }
 
-impl Default for EntityIdGenerator {
+impl Default for DefaultEntityIdGenerator {
     fn default() -> Self {
         Self::new()
     }
