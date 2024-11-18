@@ -14,9 +14,6 @@ pub struct State {
     generator: Mutex<DefaultEntityIdGenerator>,
 }
 
-unsafe impl Send for State {}
-unsafe impl Sync for State {}
-
 #[derive(Debug)]
 pub struct Point {
     x: f32,
