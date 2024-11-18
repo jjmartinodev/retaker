@@ -12,9 +12,6 @@ pub struct State {
     generator: DefaultEntityIdGenerator,
 }
 
-unsafe impl Send for State {}
-unsafe impl Sync for State {}
-
 pub struct MyComponent(String);
 pub struct Exclude;
 
