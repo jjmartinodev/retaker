@@ -62,7 +62,7 @@ impl<G: Hash + Eq + PartialEq + PartialOrd + Ord + Clone + Copy, T: Sync + Send>
             );
         }
     }
-    pub fn run_group(&self, state: &T, group: G) {
+    pub fn run_group_par(&self, state: &T, group: G) {
         if let Some(group) = self.systems.get(&group) {
             self.pool.scope(|a| {
                 group
@@ -70,6 +70,13 @@ impl<G: Hash + Eq + PartialEq + PartialOrd + Ord + Clone + Copy, T: Sync + Send>
                     .iter()
                     .for_each(|system| a.spawn(|_| system(state)))
             });
+        } else {
+            panic!("tried to run an unregistered group")
+        }
+    }
+    pub fn run_group(&self, state: &T, group: G) {
+        if let Some(group) = self.systems.get(&group) {
+            group.systems.iter().for_each(|system| system(state));
         } else {
             panic!("tried to run an unregistered group")
         }
