@@ -1,12 +1,10 @@
 use std::any::{Any, TypeId};
 use std::hash::Hash;
-use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::vec::IntoIter;
 
 use hashbrown::HashMap;
-use parking_lot::lock_api::{RwLockReadGuard, RwLockWriteGuard};
-use parking_lot::{RawRwLock, RwLock};
+use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockUpgradableReadGuard, RwLockWriteGuard};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EntityId(u64);
@@ -26,53 +24,126 @@ impl From<u64> for ResourceId {
     }
 }
 
+pub struct LockedWorld {
+    world: RwLock<World>,
+}
+
 pub struct World {
     component_table: HashMap<TypeId, Box<dyn TypeErasedListTrait>>,
     resource_table: HashMap<TypeId, Box<dyn Any>>,
-    next_id: u64,
+    next_entity_id: Mutex<u64>,
+    next_resource_id: Mutex<u64>,
 }
 
-pub struct ComponentList<T: Any> {
+unsafe impl Sync for World {}
+unsafe impl Send for World {}
+
+pub struct ComponentList<T: Any + Send + Sync> {
     components: RwLock<HashMap<EntityId, T>>,
 }
 
-pub struct Resource<T: Any> {
+pub struct Resource<T: Any + Send + Sync> {
     resource: RwLock<T>,
 }
 
-pub struct ComponentListRef<'a, T: Any> {
-    pub(crate) lock: RwLockReadGuard<'a, RawRwLock, HashMap<EntityId, T>>,
+pub struct ComponentListRef<'a, T: Any + Send + Sync> {
+    pub(crate) lock: RwLockReadGuard<'a, HashMap<EntityId, T>>,
 }
 
-pub struct ComponentListMut<'a, T: Any> {
-    pub(crate) lock: RwLockWriteGuard<'a, RawRwLock, HashMap<EntityId, T>>,
+pub struct ComponentListMut<'a, T: Any + Send + Sync> {
+    pub(crate) lock: RwLockWriteGuard<'a, HashMap<EntityId, T>>,
 }
 
-pub struct ResourceRef<'a, T: Any> {
-    lock: RwLockReadGuard<'a, RawRwLock, T>,
+pub struct ResourceRef<'a, T: Any + Send + Sync> {
+    lock: RwLockReadGuard<'a, T>,
 }
 
-pub struct ResourceMut<'a, T: Any> {
-    lock: RwLockWriteGuard<'a, RawRwLock, T>,
+pub struct ResourceMut<'a, T: Any + Send + Sync> {
+    lock: RwLockWriteGuard<'a, T>,
 }
 
-pub struct QueriedEntities<T: Any> {
+#[derive(Clone)]
+pub struct QueriedEntities {
     entities: Vec<EntityId>,
-    phantom: PhantomData<T>,
-}
-
-pub struct Query<'a, T: Any> {
-    entities: QueriedEntities<T>,
-    
 }
 
 trait TypeErasedListTrait {
     fn as_any(&self) -> &dyn Any;
 }
 
-impl<T: Any> TypeErasedListTrait for ComponentList<T> {
+impl<T: Any + Send + Sync> TypeErasedListTrait for ComponentList<T> {
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl LockedWorld {
+    pub fn new() -> LockedWorld {
+        LockedWorld {
+            world: RwLock::new(World::new()),
+        }
+    }
+    pub fn lock_shared(&self) -> ReaderWorldGuard {
+        ReaderWorldGuard {
+            lock: self.world.read(),
+        }
+    }
+    pub fn lock_exclusive(&self) -> WriterWorldGuard {
+        WriterWorldGuard {
+            lock: self.world.write(),
+        }
+    }
+    pub fn lock_upgradable(&self) -> UpgradableReaderWorldGuard {
+        UpgradableReaderWorldGuard {
+            lock: RwLockWriteGuard::downgrade_to_upgradable(self.world.write()),
+        }
+    }
+}
+
+pub struct WriterWorldGuard<'a> {
+    lock: RwLockWriteGuard<'a, World>,
+}
+
+pub struct ReaderWorldGuard<'a> {
+    lock: RwLockReadGuard<'a, World>,
+}
+
+pub struct UpgradableReaderWorldGuard<'a> {
+    lock: RwLockUpgradableReadGuard<'a, World>,
+}
+
+impl<'a> Deref for ReaderWorldGuard<'a> {
+    type Target = World;
+    fn deref(&self) -> &Self::Target {
+        self.lock.deref()
+    }
+}
+
+impl<'a> Deref for UpgradableReaderWorldGuard<'a> {
+    type Target = World;
+    fn deref(&self) -> &Self::Target {
+        self.lock.deref()
+    }
+}
+
+impl<'a> Deref for WriterWorldGuard<'a> {
+    type Target = World;
+    fn deref(&self) -> &Self::Target {
+        self.lock.deref()
+    }
+}
+
+impl<'a> DerefMut for WriterWorldGuard<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.lock.deref_mut()
+    }
+}
+
+impl<'a> UpgradableReaderWorldGuard<'a> {
+    pub fn upgrade(self) -> WriterWorldGuard<'a> {
+        WriterWorldGuard {
+            lock: RwLockUpgradableReadGuard::upgrade(self.lock),
+        }
     }
 }
 
@@ -81,10 +152,13 @@ impl World {
         World {
             component_table: HashMap::new(),
             resource_table: HashMap::new(),
-            next_id: 0,
+            next_entity_id: Mutex::new(0),
+            next_resource_id: Mutex::new(0),
         }
     }
-    pub fn component_list_ref<'a, T: Any>(&'a self) -> Option<ComponentListRef<'a, T>> {
+    pub fn component_list_ref<'a, T: Any + Send + Sync>(
+        &'a self,
+    ) -> Option<ComponentListRef<'a, T>> {
         if let Some(list) = self.component_table.get(&TypeId::of::<T>()) {
             let list = list.as_any().downcast_ref::<ComponentList<T>>().unwrap();
             Some(ComponentListRef {
@@ -94,7 +168,9 @@ impl World {
             None
         }
     }
-    pub fn component_list_mut<'a, T: Any>(&'a self) -> Option<ComponentListMut<'a, T>> {
+    pub fn component_list_mut<'a, T: Any + Send + Sync>(
+        &'a self,
+    ) -> Option<ComponentListMut<'a, T>> {
         if let Some(list) = self.component_table.get(&TypeId::of::<T>()) {
             let list = list.as_any().downcast_ref::<ComponentList<T>>().unwrap();
             Some(ComponentListMut {
@@ -104,9 +180,9 @@ impl World {
             None
         }
     }
-    pub fn resource_ref<'a, T: Any>(&'a self) -> Option<ResourceRef<'a, T>> {
-        if let Some(resource) = self.component_table.get(&TypeId::of::<T>()) {
-            let lock = resource.as_any().downcast_ref::<Resource<T>>().unwrap();
+    pub fn resource_ref<'a, T: Any + Send + Sync>(&'a self) -> Option<ResourceRef<'a, T>> {
+        if let Some(resource) = self.resource_table.get(&TypeId::of::<T>()) {
+            let lock = resource.downcast_ref::<Resource<T>>().unwrap();
             Some(ResourceRef {
                 lock: lock.resource.read(),
             })
@@ -114,9 +190,9 @@ impl World {
             None
         }
     }
-    pub fn resource_mut<'a, T: Any>(&'a self) -> Option<ResourceMut<'a, T>> {
-        if let Some(resource) = self.component_table.get(&TypeId::of::<T>()) {
-            let lock = resource.as_any().downcast_ref::<Resource<T>>().unwrap();
+    pub fn resource_mut<'a, T: Any + Send + Sync>(&'a self) -> Option<ResourceMut<'a, T>> {
+        if let Some(resource) = self.resource_table.get(&TypeId::of::<T>()) {
+            let lock = resource.downcast_ref::<Resource<T>>().unwrap();
             Some(ResourceMut {
                 lock: lock.resource.write(),
             })
@@ -124,12 +200,25 @@ impl World {
             None
         }
     }
-    pub fn create_entity(&mut self) -> EntityId {
-        let id = self.next_id;
-        self.next_id += 1;
+    pub fn create_resource<T: Any + Send + Sync>(&mut self, resource: T) -> ResourceId {
+        let mut id_guard = self.next_resource_id.lock();
+        let id = id_guard.clone();
+        *id_guard += 1;
+        self.resource_table.insert(
+            TypeId::of::<T>(),
+            Box::new(Resource {
+                resource: RwLock::new(resource),
+            }),
+        );
         id.into()
     }
-    pub fn insert<T: Any>(&mut self, entity: &EntityId, component: T) -> Option<T> {
+    pub fn create_entity(&self) -> EntityId {
+        let mut id_guard = self.next_entity_id.lock();
+        let id = id_guard.clone();
+        *id_guard += 1;
+        id.into()
+    }
+    pub fn insert<T: Any + Send + Sync>(&mut self, entity: &EntityId, component: T) -> Option<T> {
         if let Some(mut list) = self.component_list_mut() {
             return list.lock.insert(entity.clone(), component);
         }
@@ -147,7 +236,7 @@ impl World {
 
         None
     }
-    pub fn remove<T: Any>(&self, entity: &EntityId) -> Option<T> {
+    pub fn remove<T: Any + Send + Sync>(&self, entity: &EntityId) -> Option<T> {
         if let Some(mut list) = self.component_list_mut::<T>() {
             list.lock.remove(entity)
         } else {
@@ -156,7 +245,7 @@ impl World {
     }
 }
 
-impl<T: Any> IntoIterator for QueriedEntities<T> {
+impl IntoIterator for QueriedEntities {
     type IntoIter = IntoIter<EntityId>;
     type Item = EntityId;
     fn into_iter(self) -> Self::IntoIter {
@@ -164,14 +253,13 @@ impl<T: Any> IntoIterator for QueriedEntities<T> {
     }
 }
 
-impl<'a, T: Any> ComponentListRef<'a, T> {
-    pub fn query(&self) -> QueriedEntities<T> {
+impl<'a, T: Any + Send + Sync> ComponentListRef<'a, T> {
+    pub fn query(&self) -> QueriedEntities {
         QueriedEntities {
             entities: self.lock.keys().cloned().collect(),
-            phantom: PhantomData,
         }
     }
-    pub fn with<Other: Any>(&self, mut query: QueriedEntities<Other>) -> QueriedEntities<Other> {
+    pub fn with(&self, mut query: QueriedEntities) -> QueriedEntities {
         query.entities = query
             .entities
             .into_iter()
@@ -179,7 +267,7 @@ impl<'a, T: Any> ComponentListRef<'a, T> {
             .collect();
         query
     }
-    pub fn without<Other: Any>(&self, mut query: QueriedEntities<Other>) -> QueriedEntities<Other> {
+    pub fn without(&self, mut query: QueriedEntities) -> QueriedEntities {
         query.entities = query
             .entities
             .into_iter()
@@ -192,34 +280,33 @@ impl<'a, T: Any> ComponentListRef<'a, T> {
     }
 }
 
-impl<'a, T: Any> Deref for ResourceRef<'a, T> {
+impl<'a, T: Any + Send + Sync> Deref for ResourceRef<'a, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         self.lock.deref()
     }
 }
 
-impl<'a, T: Any> Deref for ResourceMut<'a, T> {
+impl<'a, T: Any + Send + Sync> Deref for ResourceMut<'a, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         self.lock.deref()
     }
 }
 
-impl<'a, T: Any> DerefMut for ResourceMut<'a, T> {
+impl<'a, T: Any + Send + Sync> DerefMut for ResourceMut<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.lock.deref_mut()
     }
 }
 
-impl<'a, T: Any> ComponentListMut<'a, T> {
-    pub fn query(&self) -> QueriedEntities<T> {
+impl<'a, T: Any + Send + Sync> ComponentListMut<'a, T> {
+    pub fn query(&self) -> QueriedEntities {
         QueriedEntities {
             entities: self.lock.keys().cloned().collect(),
-            phantom: PhantomData,
         }
     }
-    pub fn with<Other: Any>(&self, mut query: QueriedEntities<Other>) -> QueriedEntities<Other> {
+    pub fn with(&self, mut query: QueriedEntities) -> QueriedEntities {
         query.entities = query
             .entities
             .into_iter()
@@ -227,7 +314,7 @@ impl<'a, T: Any> ComponentListMut<'a, T> {
             .collect();
         query
     }
-    pub fn without<Other: Any>(&self, mut query: QueriedEntities<Other>) -> QueriedEntities<Other> {
+    pub fn without(&self, mut query: QueriedEntities) -> QueriedEntities {
         query.entities = query
             .entities
             .into_iter()
@@ -246,6 +333,9 @@ impl<'a, T: Any> ComponentListMut<'a, T> {
         entities: [&EntityId; N],
     ) -> Option<[&mut T; N]> {
         self.lock.get_many_mut(entities)
+    }
+    pub fn clear(&mut self) {
+        self.lock.clear();
     }
 }
 
@@ -344,5 +434,33 @@ fn query_with_without() {
 
     for entity in list_a.without(list_b.query()) {
         assert!(daniel == entity, "incorrectly queried \"without\"!");
+    }
+}
+
+#[test]
+fn query_resource() {
+    use std::time::Instant;
+    struct Timer {
+        last_instant: Instant,
+        interval_ms: u64,
+    }
+
+    let mut world = World::new();
+    world.create_resource(Timer {
+        last_instant: Instant::now(),
+        interval_ms: 100,
+    });
+
+    let mut n = 0;
+
+    loop {
+        if n > 3 {
+            break;
+        }
+        let mut timer = world.resource_mut::<Timer>().unwrap();
+        if timer.last_instant.elapsed().as_millis() > timer.interval_ms as u128 {
+            timer.last_instant = Instant::now();
+            n += 1;
+        }
     }
 }

@@ -1,2 +1,2 @@
-mod system;
-mod world;
+pub mod work;
+pub mod world;
