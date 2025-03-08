@@ -58,7 +58,7 @@ fn start_particles(world: &LockedWorld) {
 }
 
 fn reset_particles(world: &mut World) {
-    if let Some(mut particles) = world.component_list_mut::<Particle>() {
+    if let Some(mut particles) = world.components_mut::<Particle>() {
         particles.clear();
     }
     let mut parameters = world.resource_mut::<ParticleParameters>().unwrap();
@@ -83,8 +83,8 @@ fn reset_particles(world: &mut World) {
 
 fn update_particles(world: &LockedWorld) {
     let world = world.lock_shared();
-    let parameters = world.resource_ref::<ParticleParameters>().unwrap();
-    let mut entities = world.component_list_mut::<Particle>().unwrap();
+    let parameters = world.resource::<ParticleParameters>().unwrap();
+    let mut entities = world.components_mut::<Particle>().unwrap();
     let query = entities.query();
     for a_id in query.clone() {
         for b_id in query.clone() {
@@ -149,7 +149,7 @@ fn update_camera(world: &LockedWorld) {
         camera.hide_ui = if camera.hide_ui {false} else {true};
     }
     if camera.follow_average {
-        let entities = world.component_list_ref::<Particle>().unwrap();
+        let entities = world.components::<Particle>().unwrap();
         let mut average = Vec2::ZERO;
         let mut particle_count = 0.;
         for id in entities.query() {
@@ -177,7 +177,7 @@ fn update_camera(world: &LockedWorld) {
 
 fn check_reset(world: &LockedWorld) {
     let world = world.lock_upgradable();
-    let parameters = world.resource_ref::<ParticleParameters>().unwrap();
+    let parameters = world.resource::<ParticleParameters>().unwrap();
     if parameters.reset {
         drop(parameters);
 
@@ -188,15 +188,15 @@ fn check_reset(world: &LockedWorld) {
 
 fn draw(world: &LockedWorld) {
     let world = world.lock_shared();
-    let camera = world.resource_ref::<Camera>().unwrap();
-    let entities = world.component_list_ref::<Particle>().unwrap();
+    let camera = world.resource::<Camera>().unwrap();
+    let entities = world.components::<Particle>().unwrap();
     let query = entities.query();
     for id in query {
         let particle = entities.get(&id).unwrap();
         draw_circle(
             (particle.position.x - camera.position.x) * camera.scale,
             (particle.position.y - camera.position.y) * camera.scale,
-            5.0,
+            5.0 * camera.scale,
             WHITE,
         );
     }

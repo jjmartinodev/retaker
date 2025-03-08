@@ -1,58 +1,68 @@
 # Retaker
- Retaker is an ECS(very wip) that aims for simplicity and just enough performance to use ECS.
+ Retaker is an ECS with a lot of work to be done.
 
-# Example :
+ The World struct can create entities then insert components in them, it
+ can also create resources.
+
+ To query components, first a component list is locked, then you can query
+ the entities of that list from the list.
+
+ Components can be read/written when locking a component list and getting
+ them from the list with an entity id.
+
+ Because the World has to be locked by every system that creates an entity,
+ it is a bit inneficient. The optimal solution would be a queue that can
+ delete and create entities, then push to that queue instead of blocking
+ a whole World.
+
+ Queuing is a bit verbose as well as making a system and locking a World. Macros
+ or a better structural design could alleviate this.
+
+ Having the world locked dynamically for each system is inneficient, if i
+ could get metadata of a function like in Zig, a scheduler that permits
+ a lot more systems run parallel and reduce systems locking the world to
+ almost none.
+
+ All this said, this ecs is good enough for me and not very much complex.
+
+# World Example :
 ```
-use retaker::{entity::DefaultEntityIdGenerator, system::Scheduler, world::World};
+    let mut world = World::new();
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum SystemGroups {
-    SomeSystemGroup,
-}
+    struct Person {
+        name: String,
+    }
+    struct Dead;
 
-pub struct State {
-    world: World,
-    generator: DefaultEntityIdGenerator,
-}
+    let mathias = world.create_entity();
+    world.insert(
+        &mathias,
+        Person {
+            name: "Mathias".to_string(),
+        },
+    );
+    world.insert(&mathias, Dead);
 
-pub struct MyComponent(String);
-pub struct Exclude;
-
-fn system(state: &mut State) {
-    let entity1 = state.generator.generate();
-    state.world.insert_component(&entity1, MyComponent(String::from("hi!!!")));
-
-    let entity2 = state.generator.generate();
-    state.world.insert_component(&entity2, MyComponent(String::from("bye!!!")));
-
-    let entity3 = state.generator.generate();
-    state.world.insert_component2(
-        &entity3,
-        (MyComponent(String::from("excluded!!!")), Exclude),
+    let thomas = world.create_entity();
+    world.insert(
+        &thomas,
+        Person {
+            name: "Thomas".to_string(),
+        },
     );
 
-    {
-        let mut query = state.world.query::<MyComponent>();
-        query.filter_without::<Exclude>(&state.world);
-        for entity in query {
-            let mut string = state.world.mut_component::<MyComponent>(&entity).unwrap();
+    let dead_components = world.components::<Dead>().unwrap();
+    let person_components = world.components::<Person>().unwrap();
 
-            string.0 = string.0.to_uppercase();
-
-            println!("{}", string.0);
-        }
+    for dead_person_id in person_components.with(dead_components.query()) {
+        let person = person_components.get(&dead_person_id).unwrap();
+        println!("{} is dead", person.name);
     }
-}
 
-fn main() {
-    let mut state = State {
-        world: World::new().into(),
-        generator: DefaultEntityIdGenerator::new().into(),
-    };
-    let mut scheduler: Scheduler<SystemGroups, State> = Scheduler::new();
-
-    scheduler.add_system(system, SystemGroups::SomeSystemGroup);
-
-    scheduler.run_group(&mut state, SystemGroups::SomeSystemGroup);
-}
+    for alive_person_id in dead_components.without(person_components.query()) {
+        let person = person_components.get(&alive_person_id).unwrap();
+        println!("{} is alive", person.name);
+    }
 ```
+
+Three more examples that also feature systems are found in the examples folder

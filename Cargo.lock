@@ -379,7 +379,7 @@ dependencies = [
 
 [[package]]
 name = "retaker"
-version = "0.7.6"
+version = "0.8.6"
 dependencies = [
  "hashbrown 0.12.3",
  "macroquad",

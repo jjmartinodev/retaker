@@ -46,10 +46,12 @@ pub struct Resource<T: Any + Send + Sync> {
     resource: RwLock<T>,
 }
 
+#[derive(Debug)]
 pub struct ComponentListRef<'a, T: Any + Send + Sync> {
     pub(crate) lock: RwLockReadGuard<'a, HashMap<EntityId, T>>,
 }
 
+#[derive(Debug)]
 pub struct ComponentListMut<'a, T: Any + Send + Sync> {
     pub(crate) lock: RwLockWriteGuard<'a, HashMap<EntityId, T>>,
 }
@@ -69,11 +71,19 @@ pub struct QueriedEntities {
 
 trait TypeErasedListTrait {
     fn as_any(&self) -> &dyn Any;
+    fn remove(&self, entity: &EntityId);
 }
 
 impl<T: Any + Send + Sync> TypeErasedListTrait for ComponentList<T> {
     fn as_any(&self) -> &dyn Any {
         self
+    }
+    fn remove(&self, entity: &EntityId) {
+        let upgradeable = self.components.upgradable_read();
+        if upgradeable.contains_key(entity) {
+            let mut write = RwLockUpgradableReadGuard::upgrade(upgradeable);
+            write.remove(&entity);
+        }
     }
 }
 
@@ -156,7 +166,7 @@ impl World {
             next_resource_id: Mutex::new(0),
         }
     }
-    pub fn component_list_ref<'a, T: Any + Send + Sync>(
+    pub fn components<'a, T: Any + Send + Sync>(
         &'a self,
     ) -> Option<ComponentListRef<'a, T>> {
         if let Some(list) = self.component_table.get(&TypeId::of::<T>()) {
@@ -168,7 +178,7 @@ impl World {
             None
         }
     }
-    pub fn component_list_mut<'a, T: Any + Send + Sync>(
+    pub fn components_mut<'a, T: Any + Send + Sync>(
         &'a self,
     ) -> Option<ComponentListMut<'a, T>> {
         if let Some(list) = self.component_table.get(&TypeId::of::<T>()) {
@@ -180,7 +190,7 @@ impl World {
             None
         }
     }
-    pub fn resource_ref<'a, T: Any + Send + Sync>(&'a self) -> Option<ResourceRef<'a, T>> {
+    pub fn resource<'a, T: Any + Send + Sync>(&'a self) -> Option<ResourceRef<'a, T>> {
         if let Some(resource) = self.resource_table.get(&TypeId::of::<T>()) {
             let lock = resource.downcast_ref::<Resource<T>>().unwrap();
             Some(ResourceRef {
@@ -200,6 +210,9 @@ impl World {
             None
         }
     }
+    pub fn delete_resource<T: Any + Send + Sync>(&mut self) {
+        self.resource_table.remove(&TypeId::of::<T>());
+    }
     pub fn create_resource<T: Any + Send + Sync>(&mut self, resource: T) -> ResourceId {
         let mut id_guard = self.next_resource_id.lock();
         let id = id_guard.clone();
@@ -212,6 +225,11 @@ impl World {
         );
         id.into()
     }
+    pub fn delete_entity(&mut self, entity: &EntityId) {
+        for list in self.component_table.iter() {
+            list.1.remove(entity);
+        }
+    }
     pub fn create_entity(&self) -> EntityId {
         let mut id_guard = self.next_entity_id.lock();
         let id = id_guard.clone();
@@ -219,7 +237,7 @@ impl World {
         id.into()
     }
     pub fn insert<T: Any + Send + Sync>(&mut self, entity: &EntityId, component: T) -> Option<T> {
-        if let Some(mut list) = self.component_list_mut() {
+        if let Some(mut list) = self.components_mut() {
             return list.lock.insert(entity.clone(), component);
         }
 
@@ -237,7 +255,7 @@ impl World {
         None
     }
     pub fn remove<T: Any + Send + Sync>(&self, entity: &EntityId) -> Option<T> {
-        if let Some(mut list) = self.component_list_mut::<T>() {
+        if let Some(mut list) = self.components_mut::<T>() {
             list.lock.remove(entity)
         } else {
             None
@@ -337,6 +355,9 @@ impl<'a, T: Any + Send + Sync> ComponentListMut<'a, T> {
     pub fn clear(&mut self) {
         self.lock.clear();
     }
+    pub fn remove(&mut self, entity: &EntityId) -> Option<T> {
+        self.lock.remove(entity)
+    }
 }
 
 #[test]
@@ -356,7 +377,7 @@ fn insert_remove_set_get() {
     world.insert::<B>(&bob, 1);
 
     {
-        let list = world.component_list_ref::<A>().unwrap();
+        let list = world.components::<A>().unwrap();
 
         if let (Some(alice_val), Some(bob_val)) = (list.get(&alice), list.get(&bob)) {
             assert_eq!(
@@ -370,7 +391,7 @@ fn insert_remove_set_get() {
     }
 
     {
-        let mut list = world.component_list_mut::<B>().unwrap();
+        let mut list = world.components_mut::<B>().unwrap();
 
         let [alice_val, bob_val] = list.get_many_mut([&alice, &bob]).unwrap();
         *alice_val += *bob_val;
@@ -411,8 +432,8 @@ fn query_with_without() {
     world.insert(&bob, B);
     world.insert(&daniel, B);
 
-    let list_a = world.component_list_ref::<A>().unwrap();
-    let list_b = world.component_list_ref::<B>().unwrap();
+    let list_a = world.components::<A>().unwrap();
+    let list_b = world.components::<B>().unwrap();
 
     for entity in list_b.with(list_a.query()) {
         assert!(
